@@ -1,0 +1,30 @@
+.App {
+  text-align: center;
+}
+
+.Uploader-container {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.PdfViewers {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  width: 100%;
+}
+
+.PdfViewer-container {
+  flex: 1;
+  margin: 10px;
+}
+
+header.App-header {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}

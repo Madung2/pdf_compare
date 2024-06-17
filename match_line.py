@@ -1,8 +1,32 @@
 import Levenshtein
-threshold = 0.3  # 0에서 1 사이의 값, 높을수록 엄격함
+threshold = 0.4  # 0에서 1 사이의 값, 높을수록 엄격함
+second_threshold = 0.5
 
 def similarity_score(s1, s2):
     return 1 - Levenshtein.distance(s1, s2) / max(len(s1), len(s2))
+
+
+def get_first_element(string):
+    return string.split()[0]
+
+def find_best_matches_by_first_element(items1, items2):
+    matches = []
+    unmatched_items2 = items2[:]
+    for item1 in items1:
+        first_element1 = get_first_element(item1[0])
+        best_match = None
+        best_score = 0
+        for item2 in unmatched_items2:
+            first_element2 = get_first_element(item2[0])
+            similarity = Levenshtein.ratio(first_element1, first_element2)
+            if similarity > best_score:
+                best_score = similarity
+                best_match = item2
+        if best_score >= 0.50:
+            matches.append((item1, best_match, best_score))
+            unmatched_items2.remove(best_match)
+    return matches, [item for item in items1 if item not in [m[0] for m in matches]], unmatched_items2
+
 
 
 def get_matched_pairs(position1, position2):
@@ -30,4 +54,14 @@ def get_matched_pairs(position1, position2):
     unmatched_left_items = [(item, position1[item]) for item in unmatched_left]
     unmatched_right_items = [(item, position2[item]) for item in unmatched_right]
 
-    return matched_pairs, unmatched_left_items, unmatched_right_items
+    second_matches, final_left, final_right = find_best_matches_by_first_element(unmatched_left_items, unmatched_right_items)
+    # 두 번째 매칭 결과 합치기
+    for match in second_matches:
+        matched_pairs.append((match[0][0], match[0][1], match[1][0], match[1][1]))
+
+    # 최종 매칭되지 않은 항목들
+    final_left = [item for item in unmatched_left_items if item not in [m[0] for m in second_matches]]
+    final_right = [item for item in unmatched_right_items if item not in [m[1] for m in second_matches]]
+
+    return matched_pairs, final_left, final_right
+#    return matched_pairs, unmatched_left_items, unmatched_right_items

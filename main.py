@@ -2,9 +2,35 @@ import fitz  # PyMuPDF
 from run_compare import *
 from match_line import get_matched_pairs
 from treat_matched_pair import *
+# def split_by_line(text_positions):
+#     lines = {}
+    
+#     for item in text_positions:
+        
+#         text = item["text"]
+#         bbox = item["bbox"]
+#         page_num = item["page_num"]
+#         y_position = bbox[1]
+        
+#         if page_num not in lines:
+#             lines[page_num] = {}
+
+#         if y_position not in lines[page_num]:
+#             lines[page_num][y_position] = []
+
+#         lines[page_num][y_position].append(item)
+    
+#     # Flatten the dictionary into a list of lists
+#     line_list = []
+#     for page_num in sorted(lines.keys()):
+#         for y_position in sorted(lines[page_num].keys()):
+#             line_list.append(lines[page_num][y_position])
+    
+#     return line_list
 def split_by_line(text_positions):
     lines = {}
-    
+    y_positions = {}
+
     for item in text_positions:
         
         text = item["text"]
@@ -14,11 +40,23 @@ def split_by_line(text_positions):
         
         if page_num not in lines:
             lines[page_num] = {}
+            y_positions[page_num] = set()
 
-        if y_position not in lines[page_num]:
-            lines[page_num][y_position] = []
+        # Find the closest y_position within a tolerance of 3
+        matched_y = None
+        for y in y_positions[page_num]:
+            if abs(y - y_position) <= 4:
+                matched_y = y
+                break
+        
+        if matched_y is None:
+            y_positions[page_num].add(y_position)
+            matched_y = y_position
+        
+        if matched_y not in lines[page_num]:
+            lines[page_num][matched_y] = []
 
-        lines[page_num][y_position].append(item)
+        lines[page_num][matched_y].append(item)
     
     # Flatten the dictionary into a list of lists
     line_list = []
@@ -162,9 +200,10 @@ def highlight_text_in_pdf_green(pdf_path, highlights, output_path):
 def process_line_element(text_positions):
     new_text_positions = {}
     for line in text_positions:
-        line_text = [ ele['text'] for ele in line]
+        line_text = ''.join([ ele['text'] for ele in line])
+        
         rest_element = line
-        new_text_positions[line_text[0]] = rest_element
+        new_text_positions[line_text] = rest_element
     return new_text_positions
 
 
@@ -179,7 +218,10 @@ def make_output_json(pdf_file1, pdf_file2):
 
     # match by line
     matched_pairs, unmatched_left, unmatched_right = get_matched_pairs(text_positions1,text_positions2)
-
+    for (a,a_, b,b_) in matched_pairs:
+        print(a)
+        print(b)
+        print('########')
     # Treat match by line
     new_matched_pairs = return_only_diffs(matched_pairs)
 
@@ -197,61 +239,77 @@ def highlight_text_in_bbox(page, bbox, target_text=None, color=(1, 1, 0)):
             highlight.update()
 
 def make_output_pdf(pdf_file1, pdf_file2):
+    output_file1 = 'output1.pdf'
+    output_file2 = 'output2.pdf'
+    match_pairs, unmatched_left, unmatched_right = make_output_json(pdf_file1, pdf_file2)
+
     try:
-        output_file1 = 'output1.pdf'
-        output_file2 = 'output2.pdf'
-        match_pairs, unmatched_left, unmatched_right = make_output_json(pdf_file1, pdf_file2)
         pdf1 = fitz.open(pdf_file1)
-        pdf2 = fitz.open(pdf_file2)
-        
-
-        ###############highlight match pairs #####################
-        for [diffs, left, right] in match_pairs:
-            for (left_target_text, right_target_text) in  diffs:
-                if left_target_text:
-                    for ele in left:
-                        txt = ele['text']
-                        bbox = ele['bbox']
-                        page = pdf1[ele['page_num']]
-                        if left_target_text in txt:
-                            highlight_text_in_bbox(page, bbox, left_target_text, (1, 0.75, 0.8))
-                if right_target_text:
-                    for ele in right:
-                        txt = ele['text']
-                        bbox = ele['bbox']
-                        page = pdf2[ele['page_num']]
-                        if right_target_text in txt:
-                            highlight_text_in_bbox(page, bbox, right_target_text, (0, 1, 0))
-        ###################highlight right################################
-        print('###############')
-        print(unmatched_right, len(unmatched_right))
-        for text, right_lines in unmatched_right:
-            for ele in right_lines:
-                txt = ele['text']
-                bbox = ele['bbox']
-                page = pdf2[ele['page_num']]
-                highlight_text_in_bbox(page, bbox, None, (0, 1, 0))
-        ###################highlight left################################
-        for text, left_lines in unmatched_left:
-            for ele in left_lines:
-                txt = ele['text']
-                bbox = ele['bbox']
-                page = pdf2[ele['page_num']]
-                highlight_text_in_bbox(page, bbox, None, (1, 0.75, 0.8))
-
-        pdf1.save(output_file1)
-        pdf2.save(output_file2)
-        return output_file1, output_file2
     except:
-        return False,  False
-        
+        print(f'Failed to open {pdf_file1}')
+        return False, False
+
+    try:
+        pdf2 = fitz.open(pdf_file2)
+    except:
+        print(f'Failed to open {pdf_file2}')
+        return False, False
+
+    ###############highlight match pairs #####################
+    for [diffs, left, right] in match_pairs:
+        for (left_target_text, right_target_text) in diffs:
+            if left_target_text:
+                for ele in left:
+                    txt = ele['text']
+                    bbox = ele['bbox']
+                    page = pdf1[ele['page_num']]
+                    if left_target_text in txt:
+                        highlight_text_in_bbox(page, bbox, left_target_text, (1, 0.75, 0.8))
+            if right_target_text:
+                for ele in right:
+                    txt = ele['text']
+                    bbox = ele['bbox']
+                    page = pdf2[ele['page_num']]
+                    if right_target_text in txt:
+                        highlight_text_in_bbox(page, bbox, right_target_text, (0, 1, 0))
+    ###################highlight right################################
+    print('###############')
+    print(unmatched_right, len(unmatched_right))
+    for text, right_lines in unmatched_right:
+        for ele in right_lines:
+            txt = ele['text']
+            bbox = ele['bbox']
+            page = pdf2[ele['page_num']]
+            highlight_text_in_bbox(page, bbox, None, (0, 1, 0))
+    ###################highlight left################################
+    for text, left_lines in unmatched_left:
+        for ele in left_lines:
+            txt = ele['text']
+            bbox = ele['bbox']
+            page = pdf2[ele['page_num']]
+            highlight_text_in_bbox(page, bbox, None, (1, 0.75, 0.8))
+
+    try:
+        pdf1.save(output_file1)
+    except:
+        print(f'Failed to save {output_file1}')
+        return False, False
+
+    try:
+        pdf2.save(output_file2)
+    except:
+        print(f'Failed to save {output_file2}')
+        return False, False
+
+    return output_file1, output_file2
+
 
 if __name__ == "__main__":
-    # pdf_file1 = '5-4. 표준임대차계약서_한국공인중개사협회_검토대상1.pdf'  # 실제 파일 경로로 변경하세요.
-    # pdf_file2 = '5-5. 표준임대차계약서_한국공인중개사협회_검토생략2.pdf' # 실제 파일 경로로 변경하세요.
-    pdf_file1 = 'Non-Use-Warrenty_No1.pdf'  # 실제 파일 경로로 변경하세요.
-    pdf_file2 = 'Non-Use-Warrenty_No2.pdf' # 실제 파일 경로로 변경하세요.
-
+    print(111111)
+    pdf_file1 = '5-4. 표준임대차계약서_한국공인중개사협회_검토대상1.pdf'  # 실제 파일 경로로 변경하세요.
+    pdf_file2 = '5-5. 표준임대차계약서_한국공인중개사협회_검토생략2.pdf' # 실제 파일 경로로 변경하세요.
+    # pdf_file1 = 'Non-Use-Warrenty_No1.pdf'  # 실제 파일 경로로 변경하세요.
+    # pdf_file2 = 'Non-Use-Warrenty_No2.pdf' # 실제 파일 경로로 변경하세요.
     make_output_pdf(pdf_file1, pdf_file2)
 
 
