@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.responses import RedirectResponse, FileResponse, JSONResponse
 from pathlib import Path
 from typing import Tuple
-from compare import make_output_pdf
+from .compare import make_output_pdf
 import shutil
 from tempfile import NamedTemporaryFile
 import fitz  # PyMuPDF

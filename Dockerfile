@@ -2,13 +2,13 @@
 FROM python:3.12-slim
 
 # Set the working directory
-WORKDIR /
+WORKDIR /project
 
 # Install Poetry
 RUN pip install poetry
 
 # # Copy the pyproject.toml and poetry.lock to the working directory
-COPY pyproject.toml poetry.lock /
+COPY pyproject.toml poetry.lock /project/
 
 # Install dependencies without creating a virtual environment
 RUN poetry config virtualenvs.create false \
