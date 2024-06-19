@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,300,0,0" />
+  <link href="
+https://cdn.jsdelivr.net/npm/reset-css@5.0.2/reset.min.css
+" rel="stylesheet">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <title>PDF Compare</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100..900&display=swap');
+
+    body {
+      width: 100%;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+      font-size: 16px;
+      line-height: 1.5rem;
+      color: #333;
+      font-family: "Noto Sans KR", sans-serif;
+    }
+    .bar {
+      width: 100%;
+      height: 5px;
+      background: linear-gradient( 45deg, #20B4E1, #0A64FA);
+    }
+    .container {
+      height: 99vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .result-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      flex: 1;
+      gap: 0.4vw;
+      padding: 1vw;
+    }
+    .item {
+      width: 100%;
+      border-radius: 0.5em;
+      overflow: hidden;
+      box-shadow: 0 0 10px #33333349;
+    }
+    .item .file-box {
+      padding: 0.7vw 1vw;
+      background-color: #fff;
+    }
+    .item .file-box form {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+    .item .file-box .file-name {
+      width: 80%;
+      display: flex;
+      align-items: center;
+    }
+    .item .file-box label {
+      cursor: pointer;
+      display: flex;
+      transition: 0.25s;
+      border: 1px solid #ddd;
+      padding: 0.3vw 0.8vw;
+      border-radius: 0.2em;
+    }
+    .item .file-box label:hover {
+      background-color: #ddd;
+    }
+    .item .file-box .upload-name { 
+      width: 80%;
+      border: none;
+      color: #999;
+      margin-left: 1vw;    
+    }
+    body {
+      width: 100%;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+      font-size: 16px;
+      line-height: 1.5rem;
+      color: #333;
+      font-family: "Noto Sans KR", sans-serif;
+    }
+    .bar {
+      width: 100%;
+      height: 5px;
+      background: linear-gradient( 45deg, #20B4E1, #0A64FA);
+    }
+    .container {
+      height: 99vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .result-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      flex: 1;
+      gap: 0.4vw;
+      padding: 1vw;
+    }
+    .item {
+      width: 45%;
+      border-radius: 0.5em;
+      overflow: hidden;
+      box-shadow: 0 0 10px #33333349;
+    }
+    .item .file-box {
+      padding: 0.7vw 1vw;
+      background-color: #fff;
+    }
+    .item .file-box form {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+    .item .file-box .file-name {
+      width: 90%;
+      display: flex;
+      align-items: center;
+      font-size: 0.8rem;
+    }
+    .item .file-box label {
+      cursor: pointer;
+      display: flex;
+      transition: 0.25s;
+      border: 1px solid #ddd;
+      padding: 0.3vw 0.8vw;
+      border-radius: 0.2em;
+    }
+    .item .file-box label:hover {
+      background-color: #ddd;
+    }
+    .item .file-box .upload-name { 
+      width: 80%;
+      border: none;
+      color: #999;
+      margin-left: 1vw;    
+    }
+    .item .file-box input:active { 
+      border: 1px solid #20B4E1;
+    }
+    input[type=file] {
+      display: none;
+    }
+    .item .file-box button {
+      border: none;
+      background-color: #20B4E1;
+      color: #fff;
+      padding: 0.3vw 1.2vw;
+      border-radius: 0.2em;
+      cursor: pointer;
+      transition: 0.25s;
+    }
+    .item .file-box button:hover {
+      background-color: #1c9ac0;
+    }
+    .upload-button-container {
+      text-align: center;
+      margin-top: 1vw;
+    }
+    .upload-button {
+      border: none;
+      background-color: #20B4E1;
+      color: #fff;
+      padding: 0.5vw 2vw;
+      border-radius: 0.2em;
+      cursor: pointer;
+      transition: 0.25s;
+      font-size: 1rem;
+    }
+    .upload-button:hover {
+      background-color: #1c9ac0;
+    }
+    .item .pdf-box {
+      position: relative;
+    }
+    .item .pdf-box .text-box {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+    .item .pdf-box iframe {
+      border: none;
+      width: 100%;
+      height: 780px;
+    }
+
+    .item .file-box input:active { 
+      border: 1px solid #20B4E1;
+    }
+    input[type=file] {
+      display: none;
+    }
+    .item .file-box button {
+      border: none;
+      background-color: #20B4E1;
+      color: #fff;
+      padding: 0.3vw 1.2vw;
+      border-radius: 0.2em;
+      cursor: pointer;
+      transition: 0.25s;
+    }
+    .item .file-box button:hover {
+      background-color: #1c9ac0;
+    }
+    .item .pdf-box {
+      position: relative;
+    }
+    .item .pdf-box .text-box {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+    .item .pdf-box iframe {
+      border: none;
+    }
+
+  </style>
+</head>
+<body>
+
+    <div class="bar"></div>
+    <div id="downloads"></div>
+    <div class="container">
+      <div class="result-box">
+        <div class="item">
+          <div class="file-box">
+            <form action="#">
+              <div class="file-name">
+                <label for="fileInput1">
+                  <span class="material-symbols-outlined">file_present</span>
+                  파일 선택
+                </label>
+                <input type="file" id="fileInput1" name="fileInput1" onchange="setFile('fileInput1', 'uploadName1')">
+                <input class="upload-name" id="uploadName1" value="파일을 선택해 주세요." placeholder="첨부파일" readonly>
+              </div>
+              <button type="button" onclick="uploadFiles()">Upload</button>
+            </form>
+          </div>
+          <div class="pdf-box">
+            <div class="text-box" id="textBox1">
+              <span class="material-symbols-outlined">priority_high</span>
+              <p> 파일을 선택해 주세요.</p>
+            </div>
+            <iframe type="application/pdf" id="fileViewer1" width="100%" height="780px"></iframe>
+            <!-- <object data="https://docs.google.com/viewerng/viewer?url=http://infolab.stanford.edu/pub/papers/google.pdf&embedded=true">
+              <iframe src="https://docs.google.com/viewerng/viewer?url=http://infolab.stanford.edu/pub/papers/google.pdf&embedded=true" id="fileViewer1" frameborder="0" height="780px" width="100%"></iframe>
+          </object> -->
+          </div>
+        </div>
+        <div class="item">
+          <div class="file-box">
+            <form action="#">
+              <div class="file-name">
+                <label for="fileInput2">
+                  <span class="material-symbols-outlined">file_present</span>
+                  파일 선택
+                </label>
+                <input type="file" id="fileInput2" name="fileInput2" onchange="setFile('fileInput2', 'uploadName2')">
+                <input class="upload-name" id="uploadName2" value="파일을 선택해 주세요." placeholder="첨부파일" readonly>
+              </div>
+              <button type="button" onclick="uploadFiles()">Upload</button>
+            </form>
+          </div>
+          <div class="pdf-box">
+            <div class="text-box" id="textBox2">
+              <span class="material-symbols-outlined">priority_high</span>
+              <p> 파일을 선택해 주세요.</p>
+            </div>
+            <iframe type="application/pdf" id="fileViewer2" width="100%" height="780px"></iframe>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  
+    <script>
+
+        async function comparePDFs(fileInput1, fileInput2) {
+            const formData = new FormData();
+              formData.append('pdf1', fileInput1);
+              formData.append('pdf2', fileInput2);
+            try {
+                const response = await fetch('/api/compare_pdf', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                console.log(response, 0)
+                return await response.json();
+            } catch (error) {
+                console.error('There has been a problem with your fetch operation:', error);
+                throw error
+              }
+        }
+      function setFile(inputId, uploadNameId) {
+        var fileInput = document.getElementById(inputId);
+        var file = fileInput.files[0];
+        
+        if (file) {
+          var fileName = file.name;
+          document.getElementById(uploadNameId).value = fileName;
+        } else {
+          document.getElementById(uploadNameId).value = "파일을 선택해 주세요.";
+        }
+      }
+  
+      async function uploadFiles() {
+        let fileInput1 = document.getElementById('fileInput1').files[0];
+        let fileInput2 = document.getElementById('fileInput2').files[0];
+
+        if (fileInput1 && fileInput2) {
+            try {
+              const data = await comparePDFs(fileInput1, fileInput2);
+              const fileURL1 = data.url1;
+              const fileURL2 = data.url2;
+              console.log(fileURL1, fileURL2)
+              const fileViewer1 = document.getElementById('fileViewer1');
+              const fileViewer2 = document.getElementById('fileViewer2');
+
+              fileViewer1.src = fileURL1 + "#zoom=80";//"#toolbar=0&zoom=70"
+              fileViewer2.src = fileURL2 + "#zoom=80";
+              
+              document.getElementById('textBox1').style.display = 'none';
+              document.getElementById('textBox2').style.display = 'none';
+            } catch (error) {
+                alert(`PDF 파일을 비교하는 동안 문제가 발생했습니다.:${error}`);
+            }
+        } else {
+            alert('두 개의 파일을 모두 선택해 주세요.');
+        }
+      }
+</script>
+  
+</body>
+</html>
