@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 # Base image
+=======
+>>>>>>> 5a71251 (fix somthing)
 FROM python:3.12-slim
 
 # Set the working directory
