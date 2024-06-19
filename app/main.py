@@ -22,7 +22,7 @@ output_dir = Path(dir_name)
 output_dir.mkdir(exist_ok=True)
 output_path1 = os.path.join(dir_name, "output1.pdf")
 output_path2 = os.path.join(dir_name, "output2.pdf")
-
+static_dir = os.path.join(os.path.dirname(__file__), "static")
 origins = [
     "http://localhost:3000",
     "http://localhost:5500",
@@ -77,7 +77,7 @@ async def get_output_file(filename: str):
     return JSONResponse(content={"detail": "Not found"}, status_code=404)
 
 
-app.mount("/static", StaticFiles(directory="./static"), name="static")
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 @app.get("/", include_in_schema=False)
 async def root():
