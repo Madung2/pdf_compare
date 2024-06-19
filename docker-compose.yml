@@ -6,6 +6,6 @@ services:
     ports:
       - "9000:9000"
     volumes:
-      - .:/
+      - .:/project
     env_file:
       - .env
