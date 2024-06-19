@@ -6,6 +6,6 @@ services:
     ports:
       - "9000:9000"
     volumes:
-      - .:/app
+      - .:/
     env_file:
       - .env
