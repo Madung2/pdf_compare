@@ -1,9 +1,9 @@
 
 import fitz  # PyMuPDF
 from typing import Tuple
-from utils.run_compare import *
-from utils.match_line import get_matched_pairs
-from utils.treat_matched_pair import *
+from .utils.run_compare import *
+from .utils.match_line import get_matched_pairs
+from .utils.treat_matched_pair import *
 # def split_by_line(text_positions):
 #     lines = {}
     
