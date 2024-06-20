@@ -4,11 +4,21 @@ from typing import Tuple
 # from .utils.run_compare import *
 # from .utils.match_line import get_matched_pairs
 # from .utils.treat_matched_pair import *
-from utils.run_compare import *
-from utils.match_line import get_matched_pairs
-from utils.treat_matched_pair import *
-
-
+import os
+if os.name == 'nt':  # Windows 시스템인지 확인
+    from utils.run_compare import *
+    from utils.match_line import get_matched_pairs
+    from utils.treat_matched_pair import *
+else:  # Windows가 아닌 경우
+    from .utils.run_compare import *
+    from .utils.match_line import get_matched_pairs
+    from .utils.treat_matched_pair import *
+    pass
+from dotenv import load_dotenv
+load_dotenv()
+REMOVE_LIST = os.getenv('REMOVE_LIST','')
+if REMOVE_LIST:
+    REMOVE_LIST = REMOVE_LIST.split(',')
 def split_by_line(text_positions):
     lines = {}
     y_positions = {}
@@ -209,14 +219,14 @@ def make_output_json(pdf_file1, pdf_file2):
     # match by line
     matched_pairs, unmatched_left, unmatched_right = get_matched_pairs(text_positions1,text_positions2)
     for (a,a_, b,b_) in matched_pairs:
-        print('a:', a)
-        print('b: ',b)
+        print('a:', a, a_[0]['bbox'][1])
+        print('b: ',b, b_[0]['bbox'][1])
         print('########')
     # Treat match by line
     for c, c_ in unmatched_left:
-        print('c:', c)
+        print('c:', c,  c_[0]['bbox'][1])
     for d, d_ in unmatched_right:
-        print('d:', d)
+        print('d:', d, d_[0]['bbox'][1])
     new_matched_pairs = return_only_diffs(matched_pairs)
 
 
@@ -365,17 +375,13 @@ def make_output_pdf(pdf1, pdf2, output_file1, output_file2):
         r_num_diffs, r_text_diffs = split_diffs(r_diff)
         highlight_differences(right, r_text_diffs, pdf2, 'right')
         hightlight_chunk_differences(right, r_num_diffs, pdf2, 'right')
-   ###################highlight right################################
-
-    for text, right_lines in unmatched_right:
-        for ele in right_lines:
-            txt = ele['text']
-            bbox = ele['bbox']
-            page = pdf2[ele['page_num']]
-            highlight_text_in_bbox(page, bbox, None, [(1, 0.75, 0.8),(1, 0.75, 0.8)])
     ###################highlight left################################
 
     for text, left_lines in unmatched_left:
+        print("left_text:", text)
+        print(REMOVE_LIST)
+        if text.replace(' ', '') in REMOVE_LIST:
+            continue
         for ele in left_lines:
             txt = ele['text']
             bbox = ele['bbox']
@@ -383,9 +389,21 @@ def make_output_pdf(pdf1, pdf2, output_file1, output_file2):
             highlight_text_in_bbox(page, bbox, None, [(1, 0.75, 0.8),(1, 0.75, 0.8)])
 
 
+   ###################highlight right################################
+
+    for text, right_lines in unmatched_right:
+        print("right_text:", text)
+        if text.replace(' ', '') in REMOVE_LIST:
+            continue
+        for ele in right_lines:
+            txt = ele['text']
+            bbox = ele['bbox']
+            page = pdf2[ele['page_num']]
+            highlight_text_in_bbox(page, bbox, None, [(1, 0.75, 0.8),(1, 0.75, 0.8)])
 
     ###### postprocess remove same highlight#############
 
+    remove_same_highlights(pdf1, pdf2)
     remove_same_highlights(pdf1, pdf2)
     #######postprocess remove same highlight###############
     try:
@@ -424,7 +442,6 @@ def extract_highlights(pdf):
                         rect = fitz.Quad(quad).rect
                         highlight_text += page.get_text("text", clip=rect)
                         coordinates.append(quad)
-
                 highlight = {
                     "page": page_num + 1,
                     "text": highlight_text.strip(),
@@ -433,10 +450,9 @@ def extract_highlights(pdf):
                     "annot": annot
                 }
                 highlights.append(highlight)
-    
     return highlights
 
-def compare_highlights(highlights1, highlights2, tolerance=5):
+def compare_highlights(highlights1, highlights2, tolerance= 5):
     matched_highlights = []
 
     def are_coords_close(coords1, coords2, tol):
@@ -472,8 +488,10 @@ def remove_highlights_from_pdf(pdf, highlights):
 
 def remove_same_highlights(pdf1, pdf2):
     highlights1 = extract_highlights(pdf1)
+   
     highlights2 = extract_highlights(pdf2)
     matches = compare_highlights(highlights1, highlights2)
+    
 
     matched_highlights1 = [match[0] for match in matches]
     matched_highlights2 = [match[1] for match in matches]

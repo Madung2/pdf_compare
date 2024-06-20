@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.responses import RedirectResponse, FileResponse, JSONResponse
 from pathlib import Path
 from typing import Tuple
-# from .compare import make_output_pdf
+
 from compare import make_output_pdf
 import shutil
 from tempfile import NamedTemporaryFile
@@ -14,6 +14,11 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 
+if os.name == 'nt':  # Windows 시스템인지 확인
+    from compare import make_output_pdf
+else:
+    from .compare import make_output_pdf
+    pass
 # .env 파일 로드
 load_dotenv()
 app = FastAPI()
