@@ -1,34 +1,14 @@
 
 import fitz  # PyMuPDF
 from typing import Tuple
-from .utils.run_compare import *
-from .utils.match_line import get_matched_pairs
-from .utils.treat_matched_pair import *
-# def split_by_line(text_positions):
-#     lines = {}
-    
-#     for item in text_positions:
-        
-#         text = item["text"]
-#         bbox = item["bbox"]
-#         page_num = item["page_num"]
-#         y_position = bbox[1]
-        
-#         if page_num not in lines:
-#             lines[page_num] = {}
+# from .utils.run_compare import *
+# from .utils.match_line import get_matched_pairs
+# from .utils.treat_matched_pair import *
+from utils.run_compare import *
+from utils.match_line import get_matched_pairs
+from utils.treat_matched_pair import *
 
-#         if y_position not in lines[page_num]:
-#             lines[page_num][y_position] = []
 
-#         lines[page_num][y_position].append(item)
-    
-#     # Flatten the dictionary into a list of lists
-#     line_list = []
-#     for page_num in sorted(lines.keys()):
-#         for y_position in sorted(lines[page_num].keys()):
-#             line_list.append(lines[page_num][y_position])
-    
-#     return line_list
 def split_by_line(text_positions):
     lines = {}
     y_positions = {}
@@ -202,34 +182,48 @@ def process_line_element(text_positions):
     new_text_positions = {}
     for line in text_positions:
         line_text = ''.join([ ele['text'] for ele in line])
-        
         rest_element = line
         new_text_positions[line_text] = rest_element
     return new_text_positions
+def re_align_element_from_left(text_positions):
+    new_text_positions = []
+    for line in text_positions:
+        # 근데 문제가 같은 라인 안에 요소들 중에 순서가 망가진 것 있는지 확인해봐야함
+        
 
+        sorted_line = sorted(line, key=lambda ele: ele['bbox'][0])
+        new_text_positions.append(sorted_line)
+    return new_text_positions
 
 def make_output_json(pdf_file1, pdf_file2):
     ####file1
     text_positions1 = extract_text_with_positions(pdf_file1)
+    text_positions1 = re_align_element_from_left(text_positions1)
     text_positions1 = process_line_element(text_positions1)
 
     #####file2
     text_positions2 = extract_text_with_positions(pdf_file2)
+    text_positions2 = re_align_element_from_left(text_positions2)
     text_positions2 = process_line_element(text_positions2)
 
     # match by line
     matched_pairs, unmatched_left, unmatched_right = get_matched_pairs(text_positions1,text_positions2)
     for (a,a_, b,b_) in matched_pairs:
         print('a:', a)
-        print('b:', b)
+        print('b: ',b)
         print('########')
     # Treat match by line
+    for c, c_ in unmatched_left:
+        print('c:', c)
+    for d, d_ in unmatched_right:
+        print('d:', d)
     new_matched_pairs = return_only_diffs(matched_pairs)
+
 
     return new_matched_pairs, unmatched_left, unmatched_right
 
 
-def highlight_text_in_bbox(page, bbox, target_text=None, color=[(1, 1, 0), (1, 1, 0)]):
+def highlight_text_in_bbox(page, bbox, target_text=None, color=[(1, 0.75, 0.8),(1, 0.75, 0.8)]):
 
     rect = fitz.Rect(bbox)
     words = page.get_text("words", clip=rect)
@@ -251,7 +245,7 @@ def is_background_white(page, bbox):
     threshold = 240
     return avg_r > threshold and avg_g > threshold and avg_b > threshold
 
-def highlight_nth_char_in_bbox(page, bbox, target_char, n, color=[(1, 1, 0),(1, 1, 0)]):
+def highlight_nth_char_in_bbox(page, bbox, target_char, n, color=[(1, 0.75, 0.8),(1, 0.75, 0.8)]):
     rect = fitz.Rect(bbox)
     words = page.get_text("words", clip=rect)
     char_count = 0
@@ -278,7 +272,7 @@ def highlight_nth_char_in_bbox(page, bbox, target_char, n, color=[(1, 1, 0),(1, 
                 char_count += 1
 
 def highlight_differences(elements, diffs, pdf, file_type):
-    color = [(1, 0.75, 0.8), (1, 0, 0)] if file_type == 'left' else [(0, 1, 0), (0, 1, 0)]
+    color = [(1, 0.75, 0.8),(1, 0.75, 0.8)]
     diff_index = 0
     for ele in elements:
         txt = ele['text']
@@ -319,7 +313,7 @@ def highlight_word_char_in_bbox(page, bbox,txt, start_index, end_index, color):
     highlight.update()
 
 def hightlight_chunk_differences(elements, diffs, pdf, file_type):
-    color = [(1, 0.75, 0.8), (1, 0, 0)] if file_type == 'left' else [(0, 1, 0), (0, 1, 0)]
+    color = [(1, 0.75, 0.8),(1, 0.75, 0.8)]
     for ele in elements:
         txt = ele['text']
         bbox = ele['bbox']
@@ -334,18 +328,27 @@ def hightlight_chunk_differences(elements, diffs, pdf, file_type):
                 break  # Only highlight the first occurrence in this loop
 
 
+# def split_diffs(diffs):
+#     number_diffs = []
+#     text_diffs = []
+
+#     for diff in diffs:
+#         if diff.isdigit():
+#             number_diffs.append(diff)
+#         else:
+#             text_diffs.append(diff)
+
+#     return number_diffs, text_diffs
 def split_diffs(diffs):
     number_diffs = []
     text_diffs = []
 
     for diff in diffs:
-        if diff.isdigit():
-            number_diffs.append(diff)
-        else:
+        if re.match(r'[가-힣]', diff):
             text_diffs.append(diff)
-
+        else:
+            number_diffs.append(diff)
     return number_diffs, text_diffs
-
 def make_output_pdf(pdf1, pdf2, output_file1, output_file2):
 
     match_pairs, unmatched_left, unmatched_right = make_output_json(pdf1, pdf2)
@@ -353,8 +356,9 @@ def make_output_pdf(pdf1, pdf2, output_file1, output_file2):
 
     ###############highlight match pairs #####################
     for [l_diff, r_diff, left, right] in match_pairs:
-
         l_num_diffs, l_text_diffs = split_diffs(l_diff)
+        ### 여기서 이미 ['일', '백', '만', '1000000'] ->>>>>> ['1000000']
+        # print(l_diff , '->>>>>>', l_num_diffs)
         highlight_differences(left, l_text_diffs, pdf1, 'left')
         hightlight_chunk_differences(left, l_num_diffs, pdf1, 'left')
 
@@ -363,24 +367,27 @@ def make_output_pdf(pdf1, pdf2, output_file1, output_file2):
         hightlight_chunk_differences(right, r_num_diffs, pdf2, 'right')
    ###################highlight right################################
 
-    # print('unmatched', unmatched_right, len(unmatched_right))
-    
     for text, right_lines in unmatched_right:
         for ele in right_lines:
             txt = ele['text']
             bbox = ele['bbox']
             page = pdf2[ele['page_num']]
-            highlight_text_in_bbox(page, bbox, None, [(0, 1, 0), (0, 1, 0)])
+            highlight_text_in_bbox(page, bbox, None, [(1, 0.75, 0.8),(1, 0.75, 0.8)])
     ###################highlight left################################
 
-    # print('unmatched left', unmatched_left, len(unmatched_left))
     for text, left_lines in unmatched_left:
         for ele in left_lines:
             txt = ele['text']
             bbox = ele['bbox']
             page = pdf1[ele['page_num']]
-            highlight_text_in_bbox(page, bbox, None, [(1, 0.75, 0.8), (1, 0, 0)])
+            highlight_text_in_bbox(page, bbox, None, [(1, 0.75, 0.8),(1, 0.75, 0.8)])
 
+
+
+    ###### postprocess remove same highlight#############
+
+    remove_same_highlights(pdf1, pdf2)
+    #######postprocess remove same highlight###############
     try:
         pdf1.save(output_file1)
     except:
@@ -394,3 +401,82 @@ def make_output_pdf(pdf1, pdf2, output_file1, output_file2):
         return False, False
 
     return output_file1, output_file2
+
+
+
+def extract_highlights(pdf):
+    highlights = []
+
+    for page_num in range(len(pdf)):
+        page = pdf.load_page(page_num)
+        annot_list = page.annots()
+        if annot_list is None:
+            continue
+        
+        for annot in annot_list:
+            if annot.type[0] == 8:  # 8 corresponds to highlight annotations
+                highlight_text = ""
+                coordinates = []
+
+                for i in range(0, len(annot.vertices), 4):
+                    quad = annot.vertices[i:i + 4]
+                    if len(quad) == 4:
+                        rect = fitz.Quad(quad).rect
+                        highlight_text += page.get_text("text", clip=rect)
+                        coordinates.append(quad)
+
+                highlight = {
+                    "page": page_num + 1,
+                    "text": highlight_text.strip(),
+                    "coordinates": coordinates,
+                    "quad": quad,
+                    "annot": annot
+                }
+                highlights.append(highlight)
+    
+    return highlights
+
+def compare_highlights(highlights1, highlights2, tolerance=5):
+    matched_highlights = []
+
+    def are_coords_close(coords1, coords2, tol):
+        for (x1, y1), (x2, y2) in zip(coords1, coords2):
+            if abs(x1 - x2) > tol or abs(y1 - y2) > tol:
+                return False
+        return True
+
+    for hl1 in highlights1:
+        for hl2 in highlights2:
+            if hl1['text'] == hl2['text']:
+                for coord1 in hl1['coordinates']:
+                    for coord2 in hl2['coordinates']:
+                        if are_coords_close(coord1, coord2, tolerance):
+                            matched_highlights.append((hl1, hl2))
+                            break
+    
+    return matched_highlights
+
+def remove_highlights_from_pdf(pdf, highlights):
+    for highlight in highlights:
+        page = pdf[highlight['page'] - 1]
+        annot_list = page.annots()
+        if annot_list is None:
+            continue
+
+        for annot in annot_list:
+            if annot.type[0] == 8:  # 8 corresponds to highlight annotations
+                for quad in highlight['coordinates']:
+                    if all(abs(a - b) <= 5 for a, b in zip(annot.vertices[0], quad[0])):
+                        page.delete_annot(annot)
+                        break
+
+def remove_same_highlights(pdf1, pdf2):
+    highlights1 = extract_highlights(pdf1)
+    highlights2 = extract_highlights(pdf2)
+    matches = compare_highlights(highlights1, highlights2)
+
+    matched_highlights1 = [match[0] for match in matches]
+    matched_highlights2 = [match[1] for match in matches]
+
+    remove_highlights_from_pdf(pdf1, matched_highlights1)
+    remove_highlights_from_pdf(pdf2, matched_highlights2)
