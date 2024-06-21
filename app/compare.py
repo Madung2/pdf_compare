@@ -420,7 +420,11 @@ def make_output_pdf(pdf1, pdf2, output_file1, output_file2):
 
     return output_file1, output_file2
 
-
+def adjust_rectangle(rect, adjust_value):
+    """Adjusts the rectangle by adding the adjust_value to the left side."""
+    rect.x0 += adjust_value
+    # rect.x1 += adjust_value
+    return rect
 
 def extract_highlights(pdf):
     highlights = []
@@ -440,6 +444,9 @@ def extract_highlights(pdf):
                     quad = annot.vertices[i:i + 4]
                     if len(quad) == 4:
                         rect = fitz.Quad(quad).rect
+                        ##### adjust ######
+                        adjust_value = 4  # Value to adjust the left boundary
+                        rect = adjust_rectangle(rect, adjust_value)
                         highlight_text += page.get_text("text", clip=rect)
                         coordinates.append(quad)
                 highlight = {
@@ -450,9 +457,10 @@ def extract_highlights(pdf):
                     "annot": annot
                 }
                 highlights.append(highlight)
+    print('hightlights:', highlights)
     return highlights
 
-def compare_highlights(highlights1, highlights2, tolerance= 5):
+def compare_highlights(highlights1, highlights2, tolerance=10):
     matched_highlights = []
 
     def are_coords_close(coords1, coords2, tol):
