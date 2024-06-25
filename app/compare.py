@@ -9,11 +9,12 @@ if os.name == 'nt':  # Windows 시스템인지 확인
     from utils.run_compare import *
     from utils.match_line import get_matched_pairs
     from utils.treat_matched_pair import *
-    from utils.highlight_match import *
+    from utils.highlight_match import match_highlight
 else:  # Windows가 아닌 경우
     from .utils.run_compare import *
     from .utils.match_line import get_matched_pairs
     from .utils.treat_matched_pair import *
+    from .utils.highlight_match import match_highlight
     pass
 from dotenv import load_dotenv
 load_dotenv()
