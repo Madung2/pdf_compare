@@ -9,6 +9,7 @@ if os.name == 'nt':  # Windows 시스템인지 확인
     from utils.run_compare import *
     from utils.match_line import get_matched_pairs
     from utils.treat_matched_pair import *
+    from utils.highlight_match import match_highlight
 else:  # Windows가 아닌 경우
     from .utils.run_compare import *
     from .utils.match_line import get_matched_pairs
@@ -404,7 +405,7 @@ def make_output_pdf(pdf1, pdf2, output_file1, output_file2):
     ###### postprocess remove same highlight#############
 
     remove_same_highlights(pdf1, pdf2)
-    remove_same_highlights(pdf1, pdf2)
+    match_highlight(pdf1, pdf2)
     #######postprocess remove same highlight###############
     try:
         pdf1.save(output_file1)
